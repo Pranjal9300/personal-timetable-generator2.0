@@ -67,58 +67,63 @@ def main():
     st.sidebar.header("User Profile Management")
     
     # Profile Creation and Management
-    st.sidebar.subheader("Create or Select Profile")
+    st.sidebar.subheader("Create or Edit Profile")
     profile_name = st.sidebar.text_input("Profile Name")
     enrollment_no = st.sidebar.text_input("Enrollment Number")
     
+    # Load subject options with both names and abbreviations
+    subjects = [
+        {"name": "Innovation, Entrepreneurship and Start-ups", "abbreviation": "IES"},
+        {"name": "Know yourself", "abbreviation": "KY"},
+        {"name": "Professional Ethics", "abbreviation": "PE"},
+        {"name": "Bibliophiles", "abbreviation": "Bibl"},
+        {"name": "Psychology in Business", "abbreviation": "PB-A"},
+        {"name": "International Business", "abbreviation": "IB"},
+        {"name": "Project Management", "abbreviation": "PM"},
+        {"name": "E-Business", "abbreviation": "E.Bus"},
+        {"name": "Consumer Behaviour", "abbreviation": "CB"},
+        {"name": "Integrated Marketing Communication", "abbreviation": "IMC"},
+        {"name": "Sales & Distribution Management", "abbreviation": "S&DM"},
+        {"name": "Marketing Analytics", "abbreviation": "Man"},
+        {"name": "Strategic Brand Management", "abbreviation": "SBM"},
+        {"name": "Financial Statement Analysis", "abbreviation": "FSA"},
+        {"name": "Business Valuation", "abbreviation": "BussV"},
+        {"name": "Security and Portfolio Management", "abbreviation": "SPM"},
+        {"name": "International Finance", "abbreviation": "IF"},
+        {"name": "Management of Banks", "abbreviation": "MoB"},
+        {"name": "Programming for Analytics", "abbreviation": "PA"},
+        {"name": "Text Mining and Sentiment Analytics", "abbreviation": "TM&SA"},
+        {"name": "Data Mining and Visualization", "abbreviation": "DMV"},
+        {"name": "Analytics for Service Operations", "abbreviation": "ASO"},
+        {"name": "AI and Machine Learning", "abbreviation": "AIML"},
+        {"name": "Digital Media", "abbreviation": "DM"},
+        {"name": "Media Production and Consumption", "abbreviation": "MPC"},
+        {"name": "Media and Sports Industry", "abbreviation": "MSI"},
+        {"name": "Media Research Tools and Analytics", "abbreviation": "MRTA"},
+        {"name": "Media Cost Management & Control", "abbreviation": "MCMC"},
+        {"name": "Performance Management System", "abbreviation": "PMS"},
+        {"name": "Talent Acquisition", "abbreviation": "TA"},
+        {"name": "Learnings & Development", "abbreviation": "L&D"},
+        {"name": "Compensation & Reward Management", "abbreviation": "C&RM"},
+        {"name": "Purchasing & Inventory Management", "abbreviation": "P&IM"},
+        {"name": "Supply Chain Management", "abbreviation": "SCM"},
+        {"name": "Transportation & Distribution Management", "abbreviation": "TDM"},
+        {"name": "Warehousing & Distribution Facilities Management", "abbreviation": "W&DFM"}
+    ]
+    
+    # Convert to DataFrame for display
+    subject_df = pd.DataFrame(subjects)
+    subject_df['Display'] = subject_df['name'] + " (" + subject_df['abbreviation'] + ")"
+    subject_options = subject_df['Display'].tolist()
+
+    # Edit or Create Profile
     if st.sidebar.button("Save Profile"):
         if profile_name and enrollment_no:
-            # Load subject options with both names and abbreviations
-            subjects = [
-                {"name": "Innovation, Entrepreneurship and Start-ups", "abbreviation": "IES"},
-                {"name": "Know yourself", "abbreviation": "KY"},
-                {"name": "Professional Ethics", "abbreviation": "PE"},
-                {"name": "Bibliophiles", "abbreviation": "Bibl"},
-                {"name": "Psychology in Business", "abbreviation": "PB-A"},
-                {"name": "International Business", "abbreviation": "IB"},
-                {"name": "Project Management", "abbreviation": "PM"},
-                {"name": "E-Business", "abbreviation": "E.Bus"},
-                {"name": "Consumer Behaviour", "abbreviation": "CB"},
-                {"name": "Integrated Marketing Communication", "abbreviation": "IMC"},
-                {"name": "Sales & Distribution Management", "abbreviation": "S&DM"},
-                {"name": "Marketing Analytics", "abbreviation": "Man"},
-                {"name": "Strategic Brand Management", "abbreviation": "SBM"},
-                {"name": "Financial Statement Analysis", "abbreviation": "FSA"},
-                {"name": "Business Valuation", "abbreviation": "BussV"},
-                {"name": "Security and Portfolio Management", "abbreviation": "SPM"},
-                {"name": "International Finance", "abbreviation": "IF"},
-                {"name": "Management of Banks", "abbreviation": "MoB"},
-                {"name": "Programming for Analytics", "abbreviation": "PA"},
-                {"name": "Text Mining and Sentiment Analytics", "abbreviation": "TM&SA"},
-                {"name": "Data Mining and Visualization", "abbreviation": "DMV"},
-                {"name": "Analytics for Service Operations", "abbreviation": "ASO"},
-                {"name": "AI and Machine Learning", "abbreviation": "AIML"},
-                {"name": "Digital Media", "abbreviation": "DM"},
-                {"name": "Media Production and Consumption", "abbreviation": "MPC"},
-                {"name": "Media and Sports Industry", "abbreviation": "MSI"},
-                {"name": "Media Research Tools and Analytics", "abbreviation": "MRTA"},
-                {"name": "Media Cost Management & Control", "abbreviation": "MCMC"},
-                {"name": "Performance Management System", "abbreviation": "PMS"},
-                {"name": "Talent Acquisition", "abbreviation": "TA"},
-                {"name": "Learnings & Development", "abbreviation": "L&D"},
-                {"name": "Compensation & Reward Management", "abbreviation": "C&RM"},
-                {"name": "Purchasing & Inventory Management", "abbreviation": "P&IM"},
-                {"name": "Supply Chain Management", "abbreviation": "SCM"},
-                {"name": "Transportation & Distribution Management", "abbreviation": "TDM"},
-                {"name": "Warehousing & Distribution Facilities Management", "abbreviation": "W&DFM"}
-            ]
-            
-            # Convert to DataFrame for display
-            subject_df = pd.DataFrame(subjects)
-            subject_df['Display'] = subject_df['name'] + " (" + subject_df['abbreviation'] + ")"
-            subject_options = subject_df['Display'].tolist()
-
-            selected_subjects_display = st.sidebar.multiselect("Select Subjects", subject_options)
+            selected_subjects_display = st.sidebar.multiselect(
+                "Select Subjects (up to 9)", 
+                subject_options, 
+                max_selections=9
+            )
             selected_subjects_abbr = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects_display]
 
             profiles[profile_name] = {
@@ -128,7 +133,7 @@ def main():
             save_profiles(profiles)
             st.sidebar.success(f"Profile '{profile_name}' saved successfully!")
 
-    # Profile Selection
+    # Profile Selection and Edit
     st.sidebar.subheader("Select Existing Profile")
     profile_list = list(profiles.keys())
     selected_profile = st.sidebar.selectbox("Profiles", profile_list)
@@ -144,7 +149,21 @@ def main():
             del profiles[selected_profile]
             save_profiles(profiles)
             st.sidebar.success(f"Profile '{selected_profile}' deleted successfully!")
-    
+        
+        if st.sidebar.button("Edit Profile"):
+            st.sidebar.subheader("Edit Profile")
+            new_enrollment_no = st.sidebar.text_input("New Enrollment Number", value=enrollment_no)
+            new_subjects_display = st.sidebar.multiselect(
+                "Edit Subjects (up to 9)", 
+                subject_options, 
+                default=selected_subjects_display,
+                max_selections=9
+            )
+            profiles[selected_profile]['enrollment_no'] = new_enrollment_no
+            profiles[selected_profile]['subjects'] = new_subjects_display
+            save_profiles(profiles)
+            st.sidebar.success(f"Profile '{selected_profile}' updated successfully!")
+
     uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
 
     if uploaded_file:
