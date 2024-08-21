@@ -6,15 +6,15 @@ import re
 
 PROFILE_FILE = 'user_profiles.json'
 
-PREDEFINED_SUBJECTS = [
+PREDEFINED_SUBJECTS = {
     "Innovation, Entrepreneurship and Start-ups (IES)",
     "Know yourself (KY)",
     "Professional Ethics (PE)",
-    "Bibliophiles (Bibl)",
-    "Psychology in Business (PB-A)",
-    "International Business (IB)",
-    "Project Management (PM)",
-    "E-Business (E.Bus)",
+    "General Electives 1 - Bibliophiles (Bibl)",
+    "General Electives 1 - Psychology in Business (PB-A)",
+    "General Electives 2 - International Business (IB)",
+    "General Electives 2 - Project Management (PM)",
+    "General Electives 2 - E-Business (E.Bus)",
     "Consumer Behaviour (CB)",
     "Integrated Marketing Communication (IMC)",
     "Sales & Distribution Management (S&DM)",
@@ -43,7 +43,7 @@ PREDEFINED_SUBJECTS = [
     "Supply Chain Management (SCM)",
     "Transportation & Distribution Management (TDM)",
     "Warehousing & Distribution Facilities Management (W&DFM)"
-]
+}
 
 def load_excel(file):
     return pd.read_excel(file, sheet_name=None)
@@ -122,11 +122,7 @@ def main():
         
         if name and enrollment_no:
             st.sidebar.subheader("Select Subjects for Profile", key="subject_selection")
-            selected_subjects = st.sidebar.multiselect(
-                "Subjects", 
-                PREDEFINED_SUBJECTS, 
-                key="create_subjects"
-            )
+            selected_subjects = st.sidebar.multiselect("Subjects", list(PREDEFINED_SUBJECTS), key="create_subjects")
             
             if st.sidebar.button("Create Profile", key="create_profile_button"):
                 user_id = f"{name}_{enrollment_no}"
@@ -148,12 +144,7 @@ def main():
                 st.sidebar.write(f"Name: {profiles[user_id]['name']}")
                 st.sidebar.write(f"Enrollment Number: {profiles[user_id]['enrollment_no']}")
                 st.sidebar.subheader("Select Subjects to Update", key="update_subject_selection")
-                selected_subjects = st.sidebar.multiselect(
-                    "Subjects", 
-                    PREDEFINED_SUBJECTS, 
-                    default=profiles[user_id]['subjects'], 
-                    key="update_subjects"
-                )
+                selected_subjects = st.sidebar.multiselect("Subjects", list(PREDEFINED_SUBJECTS), default=profiles[user_id]['subjects'], key="update_subjects")
                 
                 if st.sidebar.button("Update Profile", key="update_profile_button"):
                     update_profile(user_id, selected_subjects)
@@ -176,7 +167,7 @@ def main():
                 if selected_section:
                     st.subheader("Select Your Subjects")
                     
-                    subject_options = PREDEFINED_SUBJECTS
+                    subject_options = list(PREDEFINED_SUBJECTS)
                     
                     profile = profiles[st.session_state.user_id]
                     selected_subjects = st.multiselect("Subjects", subject_options, default=profile['subjects'], key="filter_subjects")
