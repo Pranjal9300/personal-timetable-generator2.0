@@ -73,17 +73,57 @@ def main():
     
     if st.sidebar.button("Save Profile"):
         if profile_name and enrollment_no:
+            # Load subject options with both names and abbreviations
             subjects = [
-                "IES", "KY", "PE", "Bibl", "PB-A", "IB", "PM", "E.Bus", "CB",
-                "IMC", "S&DM", "Man", "SBM", "FSA", "BussV", "SPM", "IF", "MoB",
-                "PA", "TM&SA", "DMV", "ASO", "AIML", "DM", "MPC", "MSI", "MRTA",
-                "MCMC", "PMS", "TA", "L&D", "C&RM", "P&IM", "SCM", "TDM", "W&DFM"
+                {"name": "Innovation, Entrepreneurship and Start-ups", "abbreviation": "IES"},
+                {"name": "Know yourself", "abbreviation": "KY"},
+                {"name": "Professional Ethics", "abbreviation": "PE"},
+                {"name": "Bibliophiles", "abbreviation": "Bibl"},
+                {"name": "Psychology in Business", "abbreviation": "PB-A"},
+                {"name": "International Business", "abbreviation": "IB"},
+                {"name": "Project Management", "abbreviation": "PM"},
+                {"name": "E-Business", "abbreviation": "E.Bus"},
+                {"name": "Consumer Behaviour", "abbreviation": "CB"},
+                {"name": "Integrated Marketing Communication", "abbreviation": "IMC"},
+                {"name": "Sales & Distribution Management", "abbreviation": "S&DM"},
+                {"name": "Marketing Analytics", "abbreviation": "Man"},
+                {"name": "Strategic Brand Management", "abbreviation": "SBM"},
+                {"name": "Financial Statement Analysis", "abbreviation": "FSA"},
+                {"name": "Business Valuation", "abbreviation": "BussV"},
+                {"name": "Security and Portfolio Management", "abbreviation": "SPM"},
+                {"name": "International Finance", "abbreviation": "IF"},
+                {"name": "Management of Banks", "abbreviation": "MoB"},
+                {"name": "Programming for Analytics", "abbreviation": "PA"},
+                {"name": "Text Mining and Sentiment Analytics", "abbreviation": "TM&SA"},
+                {"name": "Data Mining and Visualization", "abbreviation": "DMV"},
+                {"name": "Analytics for Service Operations", "abbreviation": "ASO"},
+                {"name": "AI and Machine Learning", "abbreviation": "AIML"},
+                {"name": "Digital Media", "abbreviation": "DM"},
+                {"name": "Media Production and Consumption", "abbreviation": "MPC"},
+                {"name": "Media and Sports Industry", "abbreviation": "MSI"},
+                {"name": "Media Research Tools and Analytics", "abbreviation": "MRTA"},
+                {"name": "Media Cost Management & Control", "abbreviation": "MCMC"},
+                {"name": "Performance Management System", "abbreviation": "PMS"},
+                {"name": "Talent Acquisition", "abbreviation": "TA"},
+                {"name": "Learnings & Development", "abbreviation": "L&D"},
+                {"name": "Compensation & Reward Management", "abbreviation": "C&RM"},
+                {"name": "Purchasing & Inventory Management", "abbreviation": "P&IM"},
+                {"name": "Supply Chain Management", "abbreviation": "SCM"},
+                {"name": "Transportation & Distribution Management", "abbreviation": "TDM"},
+                {"name": "Warehousing & Distribution Facilities Management", "abbreviation": "W&DFM"}
             ]
-            selected_subjects = st.sidebar.multiselect("Select Subjects", subjects)
+            
+            # Convert to DataFrame for display
+            subject_df = pd.DataFrame(subjects)
+            subject_df['Display'] = subject_df['name'] + " (" + subject_df['abbreviation'] + ")"
+            subject_options = subject_df['Display'].tolist()
+
+            selected_subjects_display = st.sidebar.multiselect("Select Subjects", subject_options)
+            selected_subjects_abbr = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects_display]
 
             profiles[profile_name] = {
                 "enrollment_no": enrollment_no,
-                "subjects": selected_subjects
+                "subjects": selected_subjects_display
             }
             save_profiles(profiles)
             st.sidebar.success(f"Profile '{profile_name}' saved successfully!")
@@ -97,8 +137,8 @@ def main():
         st.sidebar.text(f"Profile: {selected_profile}")
         enrollment_no = profiles[selected_profile]['enrollment_no']
         st.sidebar.text(f"Enrollment Number: {enrollment_no}")
-        selected_subjects = profiles[selected_profile]['subjects']
-        st.sidebar.text(f"Selected Subjects: {', '.join(selected_subjects)}")
+        selected_subjects_display = profiles[selected_profile]['subjects']
+        st.sidebar.text(f"Selected Subjects: {', '.join(selected_subjects_display)}")
         
         if st.sidebar.button("Delete Profile"):
             del profiles[selected_profile]
