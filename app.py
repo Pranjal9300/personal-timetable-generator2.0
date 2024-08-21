@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import re
 
 PROFILE_FILE = 'profiles.json'
 
@@ -140,4 +141,79 @@ def main():
         st.sidebar.text(f"Profile: {selected_profile}")
         enrollment_no = profiles[selected_profile]['enrollment_no']
         selected_subjects_display = profiles[selected_profile]['subjects']
-        st.sidebar.text(f"Enrollment
+        st.sidebar.text(f"Enrollment No: {enrollment_no}")
+
+        # Display current subjects
+        st.sidebar.write("Currently Selected Subjects:")
+        st.sidebar.write(selected_subjects_display)
+        
+        # Editing Profile
+        if st.sidebar.button("Edit Profile"):
+            st.sidebar.write("Edit the Profile Details")
+            new_enrollment_no = st.sidebar.text_input("New Enrollment Number", value=enrollment_no)
+            new_subjects_display = st.sidebar.multiselect(
+                "Select Subjects (up to 9)", 
+                subject_options, 
+                default=selected_subjects_display,
+                max_selections=9
+            )
+            new_subjects_abbr = [sub.split('(')[-1].replace(')', '').strip() for sub in new_subjects_display]
+            
+            # Update the profile
+            profiles[selected_profile] = {
+                "enrollment_no": new_enrollment_no,
+                "subjects": new_subjects_display
+            }
+            save_profiles(profiles)
+            st.sidebar.success(f"Profile '{selected_profile}' updated successfully!")
+        
+        # Deleting Profile
+        if st.sidebar.button("Delete Profile"):
+            if selected_profile in profiles:
+                del profiles[selected_profile]
+                save_profiles(profiles)
+                st.sidebar.success(f"Profile '{selected_profile}' deleted successfully!")
+                # Reset the sidebar
+                profile_name = ''
+                enrollment_no = ''
+                selected_subjects_display = []
+                selected_subjects_abbr = []
+
+    # File Upload and Timetable Display
+    uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
+
+    if uploaded_file:
+        sheets = load_excel(uploaded_file)
+        timetable_sheet = sheets.get("MBA 2023-25_3RD SEMESTER")
+        subjects_sheet = sheets.get("FACULTY DETAILS")
+
+        if timetable_sheet is not None and subjects_sheet is not None:
+            sections = ['A', 'B', 'C']
+            selected_section = st.selectbox("Select your Section", sections)
+
+            if selected_section:
+                st.subheader("Select Your Subjects")
+                subjects = subjects_sheet[['Course Code', 'Course Title', 'Abbreviation']].drop_duplicates()
+                subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
+                subject_options = subjects['Display'].tolist()
+
+                selected_subjects = st.multiselect("Subjects", subject_options)
+
+                if selected_subjects:
+                    selected_abbreviations = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects]
+
+                    section_timetable = get_section_timetable(timetable_sheet, selected_section)
+
+                    if section_timetable is not None:
+                        personal_timetable = filter_and_blank_timetable_by_subjects(section_timetable, selected_abbreviations)
+                        st.subheader("Your Personal Timetable")
+                        st.dataframe(personal_timetable)
+                    else:
+                        st.error(f"Timetable for Section {selected_section} not found.")
+                else:
+                    st.warning("Please select at least one subject.")
+        else:
+            st.error("The required sheets are not found in the uploaded file.")
+
+if __name__ == "__main__":
+    main()
