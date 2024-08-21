@@ -6,6 +6,45 @@ import re
 
 PROFILE_FILE = 'user_profiles.json'
 
+PREDEFINED_SUBJECTS = {
+    "Innovation, Entrepreneurship and Start-ups (IES)",
+    "Know yourself (KY)",
+    "Professional Ethics (PE)",
+    "General Electives 1 - Bibliophiles (Bibl)",
+    "General Electives 1 - Psychology in Business (PB-A)",
+    "General Electives 2 - International Business (IB)",
+    "General Electives 2 - Project Management (PM)",
+    "General Electives 2 - E-Business (E.Bus)",
+    "Consumer Behaviour (CB)",
+    "Integrated Marketing Communication (IMC)",
+    "Sales & Distribution Management (S&DM)",
+    "Marketing Analytics (Man)",
+    "Strategic Brand Management (SBM)",
+    "Financial Statement Analysis (FSA)",
+    "Business Valuation (BussV)",
+    "Security and Portfolio Management (SPM)",
+    "International Finance (IF)",
+    "Management of Banks (MoB)",
+    "Programming for Analytics (PA)",
+    "Text Mining and Sentiment Analytics (TM&SA)",
+    "Data Mining and Visualization (DMV)",
+    "Analytics for Service Operations (ASO)",
+    "AI and Machine Learning (AIML)",
+    "Digital Media (DM)",
+    "Media Production and Consumption (MPC)",
+    "Media and Sports Industry (MSI)",
+    "Media Research Tools and Analytics (MRTA)",
+    "Media Cost Management & Control (MCMC)",
+    "Performance Management System (PMS)",
+    "Talent Acquisition (TA)",
+    "Learnings & Development (L&D)",
+    "Compensation & Reward Management (C&RM)",
+    "Purchasing & Inventory Management (P&IM)",
+    "Supply Chain Management (SCM)",
+    "Transportation & Distribution Management (TDM)",
+    "Warehousing & Distribution Facilities Management (W&DFM)"
+}
+
 def load_excel(file):
     # Load the entire Excel file
     return pd.read_excel(file, sheet_name=None)
@@ -83,7 +122,7 @@ def main():
         
         if st.sidebar.button("Save Profile"):
             # Save selected subjects to profile
-            selected_subjects = st.sidebar.multiselect("Select Subjects to Save", profile["subjects"])
+            selected_subjects = st.sidebar.multiselect("Select Subjects to Save", list(PREDEFINED_SUBJECTS), default=profile["subjects"])
             update_profile(user_id, selected_subjects)
             st.sidebar.success("Profile updated successfully!")
 
@@ -101,12 +140,9 @@ def main():
                 if selected_section:
                     st.subheader("Select Your Subjects")
                     
-                    # Load subjects and handle abbreviation replacements
-                    subjects = subjects_sheet[['Cours Code', 'Course Title', 'Abbreviation']].drop_duplicates()
-                    subjects['Abbreviation'] = subjects['Abbreviation'].replace({'PB': 'PB-A', 'MAn': 'Man'})
-                    subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
-                    subject_options = subjects['Display'].tolist()
-
+                    # Display predefined subjects for selection
+                    subject_options = list(PREDEFINED_SUBJECTS)
+                    
                     # Show the saved profile subjects and allow modifying them
                     selected_subjects = st.multiselect("Subjects", subject_options, default=profile["subjects"])
                     
