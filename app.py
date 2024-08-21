@@ -1,6 +1,20 @@
 import streamlit as st
 import pandas as pd
 import re
+import json
+import os
+
+PROFILE_FILE = 'profiles.json'
+
+def load_profiles():
+    if os.path.exists(PROFILE_FILE):
+        with open(PROFILE_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_profiles(profiles):
+    with open(PROFILE_FILE, 'w') as f:
+        json.dump(profiles, f, indent=4)
 
 def load_excel(file):
     # Load the entire Excel file
@@ -48,6 +62,49 @@ def filter_and_blank_timetable_by_subjects(timetable, selected_subjects):
 def main():
     st.title("Personal Timetable Generator")
 
+    profiles = load_profiles()
+    
+    st.sidebar.header("User Profile Management")
+    
+    # Profile Creation and Management
+    st.sidebar.subheader("Create or Select Profile")
+    profile_name = st.sidebar.text_input("Profile Name")
+    enrollment_no = st.sidebar.text_input("Enrollment Number")
+    
+    if st.sidebar.button("Save Profile"):
+        if profile_name and enrollment_no:
+            subjects = [
+                "IES", "KY", "PE", "Bibl", "PB-A", "IB", "PM", "E.Bus", "CB",
+                "IMC", "S&DM", "Man", "SBM", "FSA", "BussV", "SPM", "IF", "MoB",
+                "PA", "TM&SA", "DMV", "ASO", "AIML", "DM", "MPC", "MSI", "MRTA",
+                "MCMC", "PMS", "TA", "L&D", "C&RM", "P&IM", "SCM", "TDM", "W&DFM"
+            ]
+            selected_subjects = st.sidebar.multiselect("Select Subjects", subjects)
+
+            profiles[profile_name] = {
+                "enrollment_no": enrollment_no,
+                "subjects": selected_subjects
+            }
+            save_profiles(profiles)
+            st.sidebar.success(f"Profile '{profile_name}' saved successfully!")
+
+    # Profile Selection
+    st.sidebar.subheader("Select Existing Profile")
+    profile_list = list(profiles.keys())
+    selected_profile = st.sidebar.selectbox("Profiles", profile_list)
+    
+    if selected_profile:
+        st.sidebar.text(f"Profile: {selected_profile}")
+        enrollment_no = profiles[selected_profile]['enrollment_no']
+        st.sidebar.text(f"Enrollment Number: {enrollment_no}")
+        selected_subjects = profiles[selected_profile]['subjects']
+        st.sidebar.text(f"Selected Subjects: {', '.join(selected_subjects)}")
+        
+        if st.sidebar.button("Delete Profile"):
+            del profiles[selected_profile]
+            save_profiles(profiles)
+            st.sidebar.success(f"Profile '{selected_profile}' deleted successfully!")
+    
     uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
 
     if uploaded_file:
