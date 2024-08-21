@@ -6,7 +6,7 @@ import re
 
 PROFILE_FILE = 'user_profiles.json'
 
-PREDEFINED_SUBJECTS = {
+PREDEFINED_SUBJECTS = [
     "Innovation, Entrepreneurship and Start-ups (IES)",
     "Know yourself (KY)",
     "Professional Ethics (PE)",
@@ -43,14 +43,12 @@ PREDEFINED_SUBJECTS = {
     "Supply Chain Management (SCM)",
     "Transportation & Distribution Management (TDM)",
     "Warehousing & Distribution Facilities Management (W&DFM)"
-}
+]
 
 def load_excel(file):
-    # Load the entire Excel file
     return pd.read_excel(file, sheet_name=None)
 
 def get_section_timetable(timetable_sheet, section):
-    # Define where each section starts based on the section name
     section_start = {
         'A': 2,
         'B': 16,
@@ -67,22 +65,19 @@ def get_section_timetable(timetable_sheet, section):
         return None
 
 def clean_cell_value(cell_value):
-    # Remove text within brackets and split by '/'
-    cell_value = re.sub(r'\[.*?\]', '', cell_value)  # Remove text within square brackets
-    cell_value = re.sub(r'\(.*?\)', '', cell_value)  # Remove text within round brackets
-    cell_value = cell_value.replace('/', ' ').strip()  # Replace '/' with space and strip
+    cell_value = re.sub(r'\[.*?\]', '', cell_value)
+    cell_value = re.sub(r'\(.*?\)', '', cell_value)
+    cell_value = cell_value.replace('/', ' ').strip()
     return cell_value
 
 def filter_and_blank_timetable_by_subjects(timetable, selected_subjects):
     for index, row in timetable.iterrows():
-        for col in timetable.columns[1:]:  # Skip the first column (time slot)
+        for col in timetable.columns[1:]:
             cell_value = str(row[col]).strip()
             cleaned_value = clean_cell_value(cell_value)
 
-            # Split the cleaned cell value into abbreviations
             cell_subjects = cleaned_value.split()
 
-            # If none of the selected subjects match the cell subjects, blank it out
             if not any(sub in cell_subjects for sub in selected_subjects):
                 timetable.at[index, col] = ""
 
@@ -116,22 +111,24 @@ def update_profile(user_id, selected_subjects):
 def main():
     st.title("Personal Timetable Generator")
 
-    # Load user profiles
     profiles = load_profiles()
     
-    # User profile selection or creation
-    profile_option = st.sidebar.selectbox("Select an option", ["Create New Profile", "Select Existing Profile"])
+    profile_option = st.sidebar.selectbox("Select an option", ["Create New Profile", "Select Existing Profile"], key="profile_option")
 
     if profile_option == "Create New Profile":
         st.subheader("Create New Profile")
-        name = st.text_input("Enter your Name")
-        enrollment_no = st.text_input("Enter your Enrollment Number")
+        name = st.text_input("Enter your Name", key="name")
+        enrollment_no = st.text_input("Enter your Enrollment Number", key="enrollment_no")
         
         if name and enrollment_no:
-            st.sidebar.subheader("Select Subjects for Profile")
-            selected_subjects = st.sidebar.multiselect("Subjects", list(PREDEFINED_SUBJECTS))
+            st.sidebar.subheader("Select Subjects for Profile", key="subject_selection")
+            selected_subjects = st.sidebar.multiselect(
+                "Subjects", 
+                PREDEFINED_SUBJECTS, 
+                key="create_subjects"
+            )
             
-            if st.sidebar.button("Create Profile"):
+            if st.sidebar.button("Create Profile", key="create_profile_button"):
                 user_id = f"{name}_{enrollment_no}"
                 create_profile(user_id, name, enrollment_no, selected_subjects)
                 st.sidebar.success("Profile created successfully! You can now upload your timetable.")
@@ -143,25 +140,29 @@ def main():
         st.subheader("Select Existing Profile")
         if profiles:
             user_ids = list(profiles.keys())
-            user_id = st.selectbox("Select Your Profile", user_ids)
-
+            user_id = st.selectbox("Select Your Profile", user_ids, key="existing_profile")
+            
             if user_id:
                 st.session_state.user_id = user_id
                 st.sidebar.subheader("Profile Details")
                 st.sidebar.write(f"Name: {profiles[user_id]['name']}")
                 st.sidebar.write(f"Enrollment Number: {profiles[user_id]['enrollment_no']}")
-                st.sidebar.subheader("Select Subjects to Update")
-                selected_subjects = st.sidebar.multiselect("Subjects", list(PREDEFINED_SUBJECTS), default=profiles[user_id]['subjects'])
+                st.sidebar.subheader("Select Subjects to Update", key="update_subject_selection")
+                selected_subjects = st.sidebar.multiselect(
+                    "Subjects", 
+                    PREDEFINED_SUBJECTS, 
+                    default=profiles[user_id]['subjects'], 
+                    key="update_subjects"
+                )
                 
-                if st.sidebar.button("Update Profile"):
+                if st.sidebar.button("Update Profile", key="update_profile_button"):
                     update_profile(user_id, selected_subjects)
                     st.sidebar.success("Profile updated successfully!")
         else:
             st.warning("No profiles found. Create a new profile first.")
 
-    # Upload and process timetable if user_id is set
     if 'user_id' in st.session_state:
-        uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
+        uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"], key="file_uploader")
 
         if uploaded_file:
             sheets = load_excel(uploaded_file)
@@ -170,19 +171,16 @@ def main():
 
             if timetable_sheet is not None and subjects_sheet is not None:
                 sections = ['A', 'B', 'C']
-                selected_section = st.selectbox("Select your Section", sections)
+                selected_section = st.selectbox("Select your Section", sections, key="section_selection")
 
                 if selected_section:
                     st.subheader("Select Your Subjects")
                     
-                    # Display predefined subjects for selection
-                    subject_options = list(PREDEFINED_SUBJECTS)
+                    subject_options = PREDEFINED_SUBJECTS
                     
-                    # Show the saved profile subjects and allow modifying them
                     profile = profiles[st.session_state.user_id]
-                    selected_subjects = st.multiselect("Subjects", subject_options, default=profile['subjects'])
+                    selected_subjects = st.multiselect("Subjects", subject_options, default=profile['subjects'], key="filter_subjects")
                     
-                    # Update profile with selected subjects
                     update_profile(st.session_state.user_id, selected_subjects)
 
                     if selected_subjects:
