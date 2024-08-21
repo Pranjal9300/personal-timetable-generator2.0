@@ -123,8 +123,10 @@ def main():
                 subject_options, 
                 max_selections=9
             )
-
+            
+            # Extract subject abbreviations
             selected_subjects_abbr = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects_display]
+
             profiles[profile_name] = {
                 "enrollment_no": enrollment_no,
                 "subjects": selected_subjects_display
@@ -157,7 +159,6 @@ def main():
                 default=selected_subjects_display,
                 max_selections=9
             )
-            new_subjects_abbr = [sub.split('(')[-1].replace(')', '').strip() for sub in new_subjects_display]
             
             # Update the profile
             profiles[selected_profile] = {
@@ -177,8 +178,7 @@ def main():
                 profile_name = ''
                 enrollment_no = ''
                 selected_subjects_display = []
-                selected_subjects_abbr = []
-
+    
     # File Upload and Timetable Display
     uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
 
