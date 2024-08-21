@@ -89,11 +89,31 @@ def main():
 
                 if selected_section:
                     st.subheader("Select Your Subjects")
-                    # Combine course title and abbreviation for selection
-                    subjects = subjects_sheet[['Cours Code', 'Course Title', 'Abbreviation']].drop_duplicates()
-                    
-                    # Replace abbreviations as required
-                    subjects['Abbreviation'] = subjects['Abbreviation'].replace({'PB': 'PB-A', 'MAn': 'Man'})
+                    # Define the subjects list
+                    subjects = pd.DataFrame({
+                        'Course Title': [
+                            'Innovation, Entrepreneurship and Start-ups', 'Know yourself', 'Professional Ethics',
+                            'Bibliophiles', 'Psychology in Business', 'International Business', 'Project Management',
+                            'E-Business', 'Consumer Behaviour', 'Integrated Marketing Communication',
+                            'Sales & Distribution Management', 'Marketing Analytics', 'Strategic Brand Management',
+                            'Financial Statement Analysis', 'Business Valuation', 'Security and Portfolio Management',
+                            'International Finance', 'Management of Banks', 'Programming for Analytics',
+                            'Text Mining and Sentiment Analytics', 'Data Mining and Visualization',
+                            'Analytics for Service Operations', 'AI and Machine Learning', 'Digital Media',
+                            'Media Production and Consumption', 'Media and Sports Industry',
+                            'Media Research Tools and Analytics', 'Media Cost Management & Control',
+                            'Performance Management System', 'Talent Acquisition', 'Learnings & Development',
+                            'Compensation & Reward Management', 'Purchasing & Inventory Management',
+                            'Supply Chain Management', 'Transportation & Distribution Management',
+                            'Warehousing & Distribution Facilities Management'
+                        ],
+                        'Abbreviation': [
+                            'IES', 'KY', 'PE', 'Bibl', 'PB-A', 'IB', 'PM', 'E.Bus', 'CB', 'IMC',
+                            'S&DM', 'Man', 'SBM', 'FSA', 'BussV', 'SPM', 'IF', 'MoB', 'PA',
+                            'TM&SA', 'DMV', 'ASO', 'AIML', 'DM', 'MPC', 'MSI', 'MRTA', 'MCMC',
+                            'PMS', 'TA', 'L&D', 'C&RM', 'P&IM', 'SCM', 'TDM', 'W&DFM'
+                        ]
+                    })
                     
                     subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
                     subject_options = subjects['Display'].tolist()
@@ -172,24 +192,42 @@ def main():
 
             if subjects_sheet is not None:
                 st.subheader("Select Your Subjects to Save Profile")
-                # Combine course title and abbreviation for selection
-                subjects = subjects_sheet[['Cours Code', 'Course Title', 'Abbreviation']].drop_duplicates()
-                
-                # Replace abbreviations as required
-                subjects['Abbreviation'] = subjects['Abbreviation'].replace({'PB': 'PB-A', 'MAn': 'Man'})
+                # Define the subjects list
+                subjects = pd.DataFrame({
+                    'Course Title': [
+                        'Innovation, Entrepreneurship and Start-ups', 'Know yourself', 'Professional Ethics',
+                        'Bibliophiles', 'Psychology in Business', 'International Business', 'Project Management',
+                        'E-Business', 'Consumer Behaviour', 'Integrated Marketing Communication',
+                        'Sales & Distribution Management', 'Marketing Analytics', 'Strategic Brand Management',
+                        'Financial Statement Analysis', 'Business Valuation', 'Security and Portfolio Management',
+                        'International Finance', 'Management of Banks', 'Programming for Analytics',
+                        'Text Mining and Sentiment Analytics', 'Data Mining and Visualization',
+                        'Analytics for Service Operations', 'AI and Machine Learning', 'Digital Media',
+                        'Media Production and Consumption', 'Media and Sports Industry',
+                        'Media Research Tools and Analytics', 'Media Cost Management & Control',
+                        'Performance Management System', 'Talent Acquisition', 'Learnings & Development',
+                        'Compensation & Reward Management', 'Purchasing & Inventory Management',
+                        'Supply Chain Management', 'Transportation & Distribution Management',
+                        'Warehousing & Distribution Facilities Management'
+                    ],
+                    'Abbreviation': [
+                        'IES', 'KY', 'PE', 'Bibl', 'PB-A', 'IB', 'PM', 'E.Bus', 'CB', 'IMC',
+                        'S&DM', 'Man', 'SBM', 'FSA', 'BussV', 'SPM', 'IF', 'MoB', 'PA',
+                        'TM&SA', 'DMV', 'ASO', 'AIML', 'DM', 'MPC', 'MSI', 'MRTA', 'MCMC',
+                        'PMS', 'TA', 'L&D', 'C&RM', 'P&IM', 'SCM', 'TDM', 'W&DFM'
+                    ]
+                })
                 
                 subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
                 subject_options = subjects['Display'].tolist()
 
-                selected_subjects = st.multiselect("Subjects", subject_options)
+                selected_subjects = st.sidebar.multiselect("Select Subjects", subject_options)
 
                 if selected_subjects:
-                    # Save the user profile
-                    selected_abbreviations = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects]
                     save_user_profile(profile_name, selected_subjects)
-                    st.success("Profile saved successfully!")
+                    st.sidebar.success("Profile saved successfully!")
                 else:
-                    st.warning("Please select at least one subject.")
+                    st.sidebar.warning("Please select at least one subject to save your profile.")
             else:
                 st.error("The required sheet is not found in the uploaded file.")
 
