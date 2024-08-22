@@ -1,23 +1,45 @@
 import streamlit as st
 import pandas as pd
 import re
-import json
-import os
 
-PROFILE_FILE = "user_profiles.json"
+# Predefined subjects
+compulsory_subjects = ["Innovation, Entrepreneurship and Start-ups (IES)", "Know yourself (KY)", "Professional Ethics (PE)"]
+general_electives_1 = ["Bibliophiles (Bibl)", "Psychology in Business (PB-A)"]
+general_electives_2 = ["International Business (IB)", "Project Management (PM)", "E-Business (E.Bus)"]
+major_sectors = {
+    "Sales and Marketing": ["Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)"],
+    "Finance": ["Financial Statement Analysis (FSA)", "Business Valuation (BussV)", "Security and Portfolio Management (SPM)"],
+    "Business Analytics and Operations": ["Programming for Analytics (PA)", "Data Mining and Visualization (DMV)", "AI and Machine Learning (AIML)"],
+    "Media": ["Digital Media (DM)", "Media Production and Consumption (MPC)", "Media Research Tools and Analytics (MRTA)"],
+    "HR": ["Performance Management System (PMS)", "Talent Acquisition (TA)", "Learnings & Development (L&D)"],
+    "Logistics & Supply Chain": ["Purchasing & Inventory Management (P&IM)", "Supply Chain Management (SCM)", "Transportation & Distribution Management (TDM)"]
+}
+additional_subjects = [
+    "Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)",
+    "Marketing Analytics (Man)", "Strategic Brand Management (SBM)", "Financial Statement Analysis (FSA)",
+    "Business Valuation (BussV)", "Security and Portfolio Management (SPM)", "International Finance (IF)",
+    "Management of Banks (MoB)", "Programming for Analytics (PA)", "Text Mining and Sentiment Analytics (TM&SA)",
+    "Data Mining and Visualization (DMV)", "Analytics for Service Operations (ASO)", "AI and Machine Learning (AIML)",
+    "Digital Media (DM)", "Media Production and Consumption (MPC)", "Media and Sports Industry (MSI)",
+    "Media Research Tools and Analytics (MRTA)", "Media Cost Management & Control (MCMC)", "Performance Management System (PMS)",
+    "Talent Acquisition (TA)", "Learnings & Development (L&D)", "Compensation & Reward Management (C&RM)",
+    "Purchasing & Inventory Management (P&IM)", "Supply Chain Management (SCM)", "Transportation & Distribution Management (TDM)",
+    "Warehousing & Distribution Facilities Management (W&DFM)"
+]
+
+# Initialize profiles dictionary
+if "profiles" not in st.session_state:
+    st.session_state["profiles"] = {}
+
+# Sidebar for navigation
+st.sidebar.title("Navigation")
+pages = st.sidebar.radio("Go to", ["Create Profile", "Generate Timetable", "Edit/Delete Profile"])
 
 def load_excel(file):
-    # Load the entire Excel file
     return pd.read_excel(file, sheet_name=None)
 
 def get_section_timetable(timetable_sheet, section):
-    # Define where each section starts based on the section name
-    section_start = {
-        'A': 2,
-        'B': 16,
-        'C': 30
-    }
-    
+    section_start = {'A': 2, 'B': 16, 'C': 30}
     start_row = section_start.get(section)
     end_row = start_row + 12 if start_row is not None else None
 
@@ -28,208 +50,112 @@ def get_section_timetable(timetable_sheet, section):
         return None
 
 def clean_cell_value(cell_value):
-    # Remove text within brackets and split by '/'
-    cell_value = re.sub(r'\[.*?\]', '', cell_value)  # Remove text within square brackets
-    cell_value = re.sub(r'\(.*?\)', '', cell_value)  # Remove text within round brackets
-    cell_value = cell_value.replace('/', ' ').strip()  # Replace '/' with space and strip
+    cell_value = re.sub(r'\[.*?\]', '', cell_value)
+    cell_value = re.sub(r'\(.*?\)', '', cell_value)
+    cell_value = cell_value.replace('/', ' ').strip()
     return cell_value
 
 def filter_and_blank_timetable_by_subjects(timetable, selected_subjects):
     for index, row in timetable.iterrows():
-        for col in timetable.columns[1:]:  # Skip the first column (time slot)
+        for col in timetable.columns[1:]:
             cell_value = str(row[col]).strip()
             cleaned_value = clean_cell_value(cell_value)
-
-            # Split the cleaned cell value into abbreviations
             cell_subjects = cleaned_value.split()
-
-            # If none of the selected subjects match the cell subjects, blank it out
             if not any(sub in cell_subjects for sub in selected_subjects):
                 timetable.at[index, col] = ""
-
     return timetable
 
-def save_user_profile(name, subjects):
-    # Load existing profiles
-    if os.path.exists(PROFILE_FILE):
-        with open(PROFILE_FILE, "r") as f:
-            profiles = json.load(f)
-    else:
-        profiles = {}
+if pages == "Create Profile":
+    st.title("Create Profile")
+    name = st.text_input("Enter your name")
+    enrollment_no = st.text_input("Enter your enrollment number")
+    section = st.selectbox("Select your section", ["A", "B", "C"])
 
-    # Save new profile
-    profiles[name] = subjects
-    with open(PROFILE_FILE, "w") as f:
-        json.dump(profiles, f)
+    st.subheader("Compulsory Subjects")
+    for subject in compulsory_subjects:
+        st.checkbox(subject, value=True, disabled=True)
 
-def load_user_profile(name):
-    # Load existing profiles
-    if os.path.exists(PROFILE_FILE):
-        with open(PROFILE_FILE, "r") as f:
-            profiles = json.load(f)
-        return profiles.get(name, [])
-    return []
+    st.subheader("General Electives 1")
+    elective_1 = st.selectbox("Choose one", general_electives_1)
 
-def main():
-    st.title("Personal Timetable Generator")
+    st.subheader("General Electives 2")
+    elective_2 = st.selectbox("Choose one", general_electives_2)
 
-    option = st.radio("Choose an option", ("Create New Timetable", "Use Saved Profile"))
+    st.subheader("Major Sector")
+    major_sector = st.selectbox("Choose a sector", list(major_sectors.keys()))
+    for subject in major_sectors[major_sector]:
+        st.checkbox(subject, value=True, disabled=True)
 
-    if option == "Create New Timetable":
-        uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
+    st.subheader("Additional Subject")
+    additional_subject = st.selectbox("Choose one", additional_subjects)
 
-        if uploaded_file:
-            sheets = load_excel(uploaded_file)
-            timetable_sheet = sheets.get("MBA 2023-25_3RD SEMESTER")
-            subjects_sheet = sheets.get("FACULTY DETAILS")
+    if st.button("Save Profile"):
+        st.session_state["profiles"][enrollment_no] = {
+            "name": name,
+            "section": section,
+            "elective_1": elective_1,
+            "elective_2": elective_2,
+            "major_sector": major_sector,
+            "additional_subject": additional_subject
+        }
+        st.success("Profile saved successfully!")
 
-            if timetable_sheet is not None and subjects_sheet is not None:
-                sections = ['A', 'B', 'C']
-                selected_section = st.selectbox("Select your Section", sections)
+elif pages == "Generate Timetable":
+    st.title("Generate Timetable")
 
-                if selected_section:
-                    st.subheader("Select Your Subjects")
-                    # Define the subjects list
-                    subjects = pd.DataFrame({
-                        'Course Title': [
-                            'Innovation, Entrepreneurship and Start-ups', 'Know yourself', 'Professional Ethics',
-                            'Bibliophiles', 'Psychology in Business', 'International Business', 'Project Management',
-                            'E-Business', 'Consumer Behaviour', 'Integrated Marketing Communication',
-                            'Sales & Distribution Management', 'Marketing Analytics', 'Strategic Brand Management',
-                            'Financial Statement Analysis', 'Business Valuation', 'Security and Portfolio Management',
-                            'International Finance', 'Management of Banks', 'Programming for Analytics',
-                            'Text Mining and Sentiment Analytics', 'Data Mining and Visualization',
-                            'Analytics for Service Operations', 'AI and Machine Learning', 'Digital Media',
-                            'Media Production and Consumption', 'Media and Sports Industry',
-                            'Media Research Tools and Analytics', 'Media Cost Management & Control',
-                            'Performance Management System', 'Talent Acquisition', 'Learnings & Development',
-                            'Compensation & Reward Management', 'Purchasing & Inventory Management',
-                            'Supply Chain Management', 'Transportation & Distribution Management',
-                            'Warehousing & Distribution Facilities Management'
-                        ],
-                        'Abbreviation': [
-                            'IES', 'KY', 'PE', 'Bibl', 'PB-A', 'IB', 'PM', 'E.Bus', 'CB', 'IMC',
-                            'S&DM', 'Man', 'SBM', 'FSA', 'BussV', 'SPM', 'IF', 'MoB', 'PA',
-                            'TM&SA', 'DMV', 'ASO', 'AIML', 'DM', 'MPC', 'MSI', 'MRTA', 'MCMC',
-                            'PMS', 'TA', 'L&D', 'C&RM', 'P&IM', 'SCM', 'TDM', 'W&DFM'
-                        ]
-                    })
-                    
-                    subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
-                    subject_options = subjects['Display'].tolist()
+    uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
+    enrollment_no = st.selectbox("Select your enrollment number", list(st.session_state["profiles"].keys()))
 
-                    selected_subjects = st.multiselect("Subjects", subject_options)
+    if uploaded_file and enrollment_no:
+        profile = st.session_state["profiles"][enrollment_no]
+        sheets = load_excel(uploaded_file)
+        timetable_sheet = sheets.get("MBA 2023-25_3RD SEMESTER")
 
-                    if selected_subjects:
-                        # Extract just the abbreviations to filter the timetable
-                        selected_abbreviations = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects]
+        if timetable_sheet is not None:
+            section_timetable = get_section_timetable(timetable_sheet, profile["section"])
+            if section_timetable is not None:
+                selected_subjects = [
+                    profile["elective_1"].split('(')[-1].replace(')', '').strip(),
+                    profile["elective_2"].split('(')[-1].replace(')', '').strip()
+                ]
+                selected_subjects += [sub.split('(')[-1].replace(')', '').strip() for sub in major_sectors[profile["major_sector"]]]
+                selected_subjects.append(profile["additional_subject"].split('(')[-1].replace(')', '').strip())
 
-                        # Get the timetable for the selected section
-                        section_timetable = get_section_timetable(timetable_sheet, selected_section)
-
-                        if section_timetable is not None:
-                            # Filter the timetable cell-wise and blank out unselected subjects
-                            personal_timetable = filter_and_blank_timetable_by_subjects(section_timetable, selected_abbreviations)
-                            st.subheader("Your Personal Timetable")
-                            st.dataframe(personal_timetable)
-                        else:
-                            st.error(f"Timetable for Section {selected_section} not found.")
-                    else:
-                        st.warning("Please select at least one subject.")
+                personal_timetable = filter_and_blank_timetable_by_subjects(section_timetable, selected_subjects)
+                st.subheader("Your Personal Timetable")
+                st.dataframe(personal_timetable)
             else:
-                st.error("The required sheets are not found in the uploaded file.")
-
-    elif option == "Use Saved Profile":
-        st.subheader("Select Your Profile")
-        profiles = []
-
-        if os.path.exists(PROFILE_FILE):
-            with open(PROFILE_FILE, "r") as f:
-                profiles = json.load(f).keys()
+                st.error(f"Timetable for Section {profile['section']} not found.")
         else:
-            st.warning("No profiles found. Please create a new timetable first.")
+            st.error("The required timetable sheet is not found in the uploaded file.")
 
-        selected_profile = st.selectbox("Choose your profile", profiles)
+elif pages == "Edit/Delete Profile":
+    st.title("Edit or Delete Profile")
+    enrollment_no = st.text_input("Enter your enrollment number to search")
 
-        if selected_profile:
-            uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
+    if enrollment_no in st.session_state["profiles"]:
+        profile = st.session_state["profiles"][enrollment_no]
+        st.write(f"Name: {profile['name']}")
+        st.write(f"Section: {profile['section']}")
+        st.write(f"Elective 1: {profile['elective_1']}")
+        st.write(f"Elective 2: {profile['elective_2']}")
+        st.write(f"Major Sector: {profile['major_sector']}")
+        st.write(f"Additional Subject: {profile['additional_subject']}")
 
-            if uploaded_file:
-                sheets = load_excel(uploaded_file)
-                timetable_sheet = sheets.get("MBA 2023-25_3RD SEMESTER")
+        if st.button("Delete Profile"):
+            del st.session_state["profiles"][enrollment_no]
+            st.success("Profile deleted successfully!")
 
-                if timetable_sheet is not None:
-                    # Load the saved subjects for the selected profile
-                    selected_subjects = load_user_profile(selected_profile)
-                    selected_abbreviations = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects]
+        if st.button("Edit Profile"):
+            st.session_state["profiles"][enrollment_no] = {
+                "name": st.text_input("Enter your name", value=profile['name']),
+                "section": st.selectbox("Select your section", ["A", "B", "C"], index=["A", "B", "C"].index(profile['section'])),
+                "elective_1": st.selectbox("Choose one", general_electives_1, index=general_electives_1.index(profile['elective_1'])),
+                "elective_2": st.selectbox("Choose one", general_electives_2, index=general_electives_2.index(profile['elective_2'])),
+                "major_sector": st.selectbox("Choose a sector", list(major_sectors.keys()), index=list(major_sectors.keys()).index(profile['major_sector'])),
+                "additional_subject": st.selectbox("Choose one", additional_subjects, index=additional_subjects.index(profile['additional_subject']))
+            }
+            st.success("Profile updated successfully!")
+    else:
+        st.info("Profile not found. Please enter a valid enrollment number.")
 
-                    sections = ['A', 'B', 'C']
-                    selected_section = st.selectbox("Select your Section", sections)
-
-                    if selected_section:
-                        # Get the timetable for the selected section
-                        section_timetable = get_section_timetable(timetable_sheet, selected_section)
-
-                        if section_timetable is not None:
-                            # Filter the timetable cell-wise and blank out unselected subjects
-                            personal_timetable = filter_and_blank_timetable_by_subjects(section_timetable, selected_abbreviations)
-                            st.subheader("Your Personal Timetable")
-                            st.dataframe(personal_timetable)
-                        else:
-                            st.error(f"Timetable for Section {selected_section} not found.")
-                else:
-                    st.error("The required sheet is not found in the uploaded file.")
-
-    st.sidebar.subheader("Save Profile")
-    profile_name = st.sidebar.text_input("Enter your name to save profile")
-
-    if profile_name:
-        uploaded_file = st.file_uploader("Upload your timetable Excel file for profile saving", type=["xlsx"])
-
-        if uploaded_file:
-            sheets = load_excel(uploaded_file)
-            subjects_sheet = sheets.get("FACULTY DETAILS")
-
-            if subjects_sheet is not None:
-                st.subheader("Select Your Subjects to Save Profile")
-                # Define the subjects list
-                subjects = pd.DataFrame({
-                    'Course Title': [
-                        'Innovation, Entrepreneurship and Start-ups', 'Know yourself', 'Professional Ethics',
-                        'Bibliophiles', 'Psychology in Business', 'International Business', 'Project Management',
-                        'E-Business', 'Consumer Behaviour', 'Integrated Marketing Communication',
-                        'Sales & Distribution Management', 'Marketing Analytics', 'Strategic Brand Management',
-                        'Financial Statement Analysis', 'Business Valuation', 'Security and Portfolio Management',
-                        'International Finance', 'Management of Banks', 'Programming for Analytics',
-                        'Text Mining and Sentiment Analytics', 'Data Mining and Visualization',
-                        'Analytics for Service Operations', 'AI and Machine Learning', 'Digital Media',
-                        'Media Production and Consumption', 'Media and Sports Industry',
-                        'Media Research Tools and Analytics', 'Media Cost Management & Control',
-                        'Performance Management System', 'Talent Acquisition', 'Learnings & Development',
-                        'Compensation & Reward Management', 'Purchasing & Inventory Management',
-                        'Supply Chain Management', 'Transportation & Distribution Management',
-                        'Warehousing & Distribution Facilities Management'
-                    ],
-                    'Abbreviation': [
-                        'IES', 'KY', 'PE', 'Bibl', 'PB-A', 'IB', 'PM', 'E.Bus', 'CB', 'IMC',
-                        'S&DM', 'Man', 'SBM', 'FSA', 'BussV', 'SPM', 'IF', 'MoB', 'PA',
-                        'TM&SA', 'DMV', 'ASO', 'AIML', 'DM', 'MPC', 'MSI', 'MRTA', 'MCMC',
-                        'PMS', 'TA', 'L&D', 'C&RM', 'P&IM', 'SCM', 'TDM', 'W&DFM'
-                    ]
-                })
-                
-                subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
-                subject_options = subjects['Display'].tolist()
-
-                selected_subjects = st.sidebar.multiselect("Select Subjects", subject_options)
-
-                if selected_subjects:
-                    save_user_profile(profile_name, selected_subjects)
-                    st.sidebar.success("Profile saved successfully!")
-                else:
-                    st.sidebar.warning("Please select at least one subject to save your profile.")
-            else:
-                st.error("The required sheet is not found in the uploaded file.")
-
-if __name__ == "__main__":
-    main()
