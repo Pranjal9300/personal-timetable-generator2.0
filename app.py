@@ -1,106 +1,100 @@
-import json
-import os
 import streamlit as st
 
-# Define the path to the profiles file
-PROFILES_FILE = 'profiles.json'
+# Predefined subjects
+compulsory_subjects = ["Innovation, Entrepreneurship and Start-ups (IES)", "Know yourself (KY)", "Professional Ethics (PE)"]
+general_electives_1 = ["Bibliophiles (Bibl)", "Psychology in Business (PB-A)"]
+general_electives_2 = ["International Business (IB)", "Project Management (PM)", "E-Business (E.Bus)"]
+major_sectors = {
+    "Sales and Marketing": ["Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)"],
+    "Finance": ["Financial Statement Analysis (FSA)", "Business Valuation (BussV)", "Security and Portfolio Management (SPM)"],
+    "Business Analytics and Operations": ["Programing for Analytics (PA)", "Data Mining and Visualization (DMV)", "AI and Machine Learning (AIML)"],
+    "Media": ["Digital Media (DM)", "Media Production and Consumption (MPC)", "Media Research Tools and Analytics (MRTA)"],
+    "HR": ["Performance Management System (PMS)", "Talent Acquisition (TA)", "Learnings & Development (L&D)"],
+    "Logistics & Supply Chain": ["Purchasing & Inventory Management (P&IM)", "Supply Chain Management (SCM)", "Transportation & Distribution Management (TDM)"]
+}
+additional_subjects = [
+    "Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)",
+    "Maketing Analytics (Man)", "Strategic Brand Management (SBM)", "Financial Statement Analysis (FSA)",
+    "Business Valuation (BussV)", "Security and Portfolio Management (SPM)", "International Finance (IF)",
+    "Management of Banks (MoB)", "Programing for Analytics (PA)", "Text Mining and Sentiment Analytics (TM&SA)",
+    "Data Mining and Visualization (DMV)", "Analytics for Service Operations (ASO)", "AI and Machine Learning (AIML)",
+    "Digital Media (DM)", "Media Production and Consumption (MPC)", "Media and Sports Industry (MSI)",
+    "Media Research Tools and Analytics (MRTA)", "Media Cost Management & Control (MCMC)", "Performance Management System (PMS)",
+    "Talent Acquisition (TA)", "Learnings & Development (L&D)", "Compensation & Reward Management (C&RM)",
+    "Purchasing & Inventory Management (P&IM)", "Supply Chain Management (SCM)", "Transportation & Distribution Management (TDM)",
+    "Warehousing & Distribution Facilities Management (W&DFM)"
+]
 
-def load_profiles():
-    if not os.path.exists(PROFILES_FILE):
-        return {}  # Return an empty dictionary if the file doesn't exist
-    
-    try:
-        with open(PROFILES_FILE, 'r') as file:
-            data = file.read()
-            if not data:
-                return {}  # Return an empty dictionary if the file is empty
-            return json.loads(data)
-    except json.JSONDecodeError:
-        st.error("Error reading the profiles file. The file might be corrupted or invalid.")
-        return {}  # Return an empty dictionary if there's an error
+# Initialize profiles dictionary
+if "profiles" not in st.session_state:
+    st.session_state["profiles"] = {}
 
-def save_profiles(profiles):
-    with open(PROFILES_FILE, 'w') as file:
-        json.dump(profiles, file, indent=4)
+# Sidebar for navigation
+st.sidebar.title("Navigation")
+pages = st.sidebar.radio("Go to", ["Create Profile", "Edit/Delete Profile"])
 
-def create_profile(name, enrollment_no, section, subjects):
-    profiles = load_profiles()
-    profiles[enrollment_no] = {
-        'name': name,
-        'section': section,
-        'subjects': subjects
-    }
-    save_profiles(profiles)
-    st.success("Profile created successfully!")
-
-def update_profile(enrollment_no, section, subjects):
-    profiles = load_profiles()
-    if enrollment_no in profiles:
-        profiles[enrollment_no].update({
-            'section': section,
-            'subjects': subjects
-        })
-        save_profiles(profiles)
-        st.success("Profile updated successfully!")
-    else:
-        st.error("No profile found with the given enrollment number.")
-
-def delete_profile(enrollment_no):
-    profiles = load_profiles()
-    if enrollment_no in profiles:
-        del profiles[enrollment_no]
-        save_profiles(profiles)
-        st.success("Profile deleted successfully!")
-    else:
-        st.error("No profile found with the given enrollment number.")
-
-def display_all_profiles():
-    profiles = load_profiles()
-    if profiles:
-        for enrollment_no, profile in profiles.items():
-            name = profile.get('name', 'N/A')
-            section = profile.get('section', 'N/A')
-            subjects = profile.get('subjects', [])
-            st.write(f"**Name**: {name} | **Enrollment No**: {enrollment_no} | **Section**: {section} | **Subjects**: {', '.join(subjects)}")
-            st.write("---")
-    else:
-        st.write("No profiles available.")
-
-# Streamlit app UI
-st.title("Profile Management")
-
-menu = st.sidebar.selectbox("Menu", ["Create Profile", "Update Profile", "Delete Profile", "View Profiles"])
-
-if menu == "Create Profile":
-    st.header("Create Profile")
-    name = st.text_input("Name")
-    enrollment_no = st.text_input("Enrollment Number")
-    section = st.selectbox("Select Section", ["A", "B", "C"])
-    # Add subject selection logic here
-    subjects = st.text_input("Subjects (comma-separated)").split(",")  # Example, adapt as needed
-    if st.button("Create Profile"):
-        create_profile(name, enrollment_no, section, subjects)
-
-elif menu == "Update Profile":
-    st.header("Update Profile")
+if pages == "Create Profile":
+    st.title("Create Profile")
+    name = st.text_input("Enter your name")
     enrollment_no = st.text_input("Enter your enrollment number")
-    if enrollment_no:
-        profiles = load_profiles()
-        if enrollment_no in profiles:
-            name = st.text_input("Name", value=profiles[enrollment_no]['name'])
-            section = st.selectbox("Select Section", ["A", "B", "C"], index=["A", "B", "C"].index(profiles[enrollment_no]['section']))
-            subjects = st.text_input("Subjects (comma-separated)", value=", ".join(profiles[enrollment_no]['subjects'])).split(",")
-            if st.button("Update Profile"):
-                update_profile(enrollment_no, section, subjects)
-        else:
-            st.error(f"No profile found with Enrollment No: {enrollment_no}")
+    section = st.selectbox("Select your section", ["A", "B", "C"])
 
-elif menu == "Delete Profile":
-    st.header("Delete Profile")
-    enrollment_no = st.text_input("Enter your enrollment number")
-    if st.button("Delete Profile"):
-        delete_profile(enrollment_no)
+    st.subheader("Compulsory Subjects")
+    for subject in compulsory_subjects:
+        st.checkbox(subject, value=True, disabled=True)
 
-elif menu == "View Profiles":
-    st.header("View Profiles")
-    display_all_profiles()
+    st.subheader("General Electives 1")
+    elective_1 = st.selectbox("Choose one", general_electives_1)
+
+    st.subheader("General Electives 2")
+    elective_2 = st.selectbox("Choose one", general_electives_2)
+
+    st.subheader("Major Sector")
+    major_sector = st.selectbox("Choose a sector", list(major_sectors.keys()))
+    for subject in major_sectors[major_sector]:
+        st.checkbox(subject, value=True, disabled=True)
+
+    st.subheader("Additional Subject")
+    additional_subject = st.selectbox("Choose one", additional_subjects)
+
+    if st.button("Save Profile"):
+        st.session_state["profiles"][enrollment_no] = {
+            "name": name,
+            "section": section,
+            "elective_1": elective_1,
+            "elective_2": elective_2,
+            "major_sector": major_sector,
+            "additional_subject": additional_subject
+        }
+        st.success("Profile saved successfully!")
+
+elif pages == "Edit/Delete Profile":
+    st.title("Edit or Delete Profile")
+    enrollment_no = st.text_input("Enter your enrollment number to search")
+
+    if enrollment_no in st.session_state["profiles"]:
+        profile = st.session_state["profiles"][enrollment_no]
+        st.write(f"Name: {profile['name']}")
+        st.write(f"Section: {profile['section']}")
+        st.write(f"Elective 1: {profile['elective_1']}")
+        st.write(f"Elective 2: {profile['elective_2']}")
+        st.write(f"Major Sector: {profile['major_sector']}")
+        st.write(f"Additional Subject: {profile['additional_subject']}")
+
+        if st.button("Delete Profile"):
+            del st.session_state["profiles"][enrollment_no]
+            st.success("Profile deleted successfully!")
+
+        if st.button("Edit Profile"):
+            st.session_state["profiles"][enrollment_no] = {
+                "name": st.text_input("Enter your name", value=profile['name']),
+                "section": st.selectbox("Select your section", ["A", "B", "C"], index=["A", "B", "C"].index(profile['section'])),
+                "elective_1": st.selectbox("Choose one", general_electives_1, index=general_electives_1.index(profile['elective_1'])),
+                "elective_2": st.selectbox("Choose one", general_electives_2, index=general_electives_2.index(profile['elective_2'])),
+                "major_sector": st.selectbox("Choose a sector", list(major_sectors.keys()), index=list(major_sectors.keys()).index(profile['major_sector'])),
+                "additional_subject": st.selectbox("Choose one", additional_subjects, index=additional_subjects.index(profile['additional_subject']))
+            }
+            st.success("Profile edited successfully!")
+
+    else:
+        st.info("No profile found for this enrollment number.")
