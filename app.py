@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 # Predefined subjects
 compulsory_subjects = ["Innovation, Entrepreneurship and Start-ups (IES)", "Know yourself (KY)", "Professional Ethics (PE)"]
@@ -15,9 +16,9 @@ major_sectors = {
 }
 additional_subjects = [
     "Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)",
-    "Maketing Analytics (Man)", "Strategic Brand Management (SBM)", "Financial Statement Analysis (FSA)",
+    "Marketing Analytics (Man)", "Strategic Brand Management (SBM)", "Financial Statement Analysis (FSA)",
     "Business Valuation (BussV)", "Security and Portfolio Management (SPM)", "International Finance (IF)",
-    "Management of Banks (MoB)", "Programing for Analytics (PA)", "Text Mining and Sentiment Analytics (TM&SA)",
+    "Management of Banks (MoB)", "Programming for Analytics (PA)", "Text Mining and Sentiment Analytics (TM&SA)",
     "Data Mining and Visualization (DMV)", "Analytics for Service Operations (ASO)", "AI and Machine Learning (AIML)",
     "Digital Media (DM)", "Media Production and Consumption (MPC)", "Media and Sports Industry (MSI)",
     "Media Research Tools and Analytics (MRTA)", "Media Cost Management & Control (MCMC)", "Performance Management System (PMS)",
@@ -101,31 +102,48 @@ elif pages == "Edit/Delete Profile":
         st.info("No profile found for this enrollment number.")
 
 elif pages == "Generate Timetable":
-    st.title("Generate Timetable")
-    uploaded_file = st.file_uploader("Upload the general timetable", type=["xlsx"])
+    st.title("Generate Your Timetable")
+
+    uploaded_file = st.file_uploader("Upload the general timetable (Excel file)", type=["xlsx"])
 
     if uploaded_file is not None:
         general_timetable = pd.read_excel(uploaded_file)
-        enrollment_no = st.selectbox("Select your enrollment number", list(st.session_state["profiles"].keys()))
+        
+        # Print column names for debugging
+        st.write("Column names in the uploaded file:", general_timetable.columns.tolist())
+        
+        # Strip any leading/trailing whitespace from column names
+        general_timetable.columns = general_timetable.columns.str.strip()
 
-        if enrollment_no:
-            profile = st.session_state["profiles"][enrollment_no]
-            selected_subjects = [
-                profile["elective_1"], 
-                profile["elective_2"], 
-                profile["additional_subject"]
-            ] + major_sectors[profile["major_sector"]] + compulsory_subjects
+        # Check if 'Subject' column exists
+        if 'Subject' not in general_timetable.columns:
+            st.error("The uploaded timetable file does not contain a 'Subject' column. Please check your file.")
+        else:
+            enrollment_no = st.selectbox("Select your enrollment number", list(st.session_state["profiles"].keys()))
 
-            filtered_timetable = general_timetable[general_timetable['Subject'].isin(selected_subjects)]
-            
-            st.write("Generated Timetable")
-            st.dataframe(filtered_timetable)
+            if enrollment_no:
+                profile = st.session_state["profiles"][enrollment_no]
+                selected_subjects = [
+                    profile["elective_1"], 
+                    profile["elective_2"], 
+                    profile["additional_subject"]
+                ] + major_sectors[profile["major_sector"]] + compulsory_subjects
 
-            # Option to download the generated timetable
-            download_timetable = filtered_timetable.to_excel(index=False)
-            st.download_button(
-                label="Download Timetable",
-                data=download_timetable,
-                file_name=f"timetable_{enrollment_no}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+                # Filter the timetable based on selected subjects
+                filtered_timetable = general_timetable[general_timetable['Subject'].isin(selected_subjects)]
+
+                st.write("Generated Timetable")
+                st.dataframe(filtered_timetable)
+
+                # Option to download the generated timetable
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    filtered_timetable.to_excel(writer, index=False)
+                download_timetable = output.getvalue()
+
+                st.download_button(
+                    label="Download Timetable",
+                    data=download_timetable,
+                    file_name=f"timetable_{enrollment_no}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
