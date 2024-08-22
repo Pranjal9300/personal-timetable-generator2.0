@@ -1,81 +1,104 @@
-# Import necessary libraries
 import streamlit as st
-import pandas as pd
-import re
 
-# Load the general timetable from an Excel file
-def load_excel(file):
-    return pd.read_excel(file, sheet_name=None)
+# Dummy storage for profiles
+profiles = {}
 
-# Get the section timetable from the general timetable
-def get_section_timetable(timetable_sheet, section):
-    section_start = {
-        'A': 2,
-        'B': 16,
-        'C': 30
+# Function to create or update a profile
+def create_or_update_profile(name, enrollment_no, section, subjects):
+    profiles[enrollment_no] = {
+        'name': name,
+        'section': section,
+        'subjects': subjects
     }
-    start_row = section_start.get(section)
-    end_row = start_row + 12 if start_row is not None else None
-    if start_row is not None and end_row is not None:
-        section_timetable = timetable_sheet.iloc[start_row:end_row]
-        return section_timetable
+    st.success(f"Profile for {name} (Enrollment No: {enrollment_no}) has been saved.")
+
+# Function to delete a profile
+def delete_profile(enrollment_no):
+    if enrollment_no in profiles:
+        del profiles[enrollment_no]
+        st.success(f"Profile with Enrollment No: {enrollment_no} has been deleted.")
     else:
-        return None
+        st.error("Profile not found.")
 
-# Clean cell values by removing text within brackets and splitting by '/'
-def clean_cell_value(cell_value):
-    cell_value = re.sub(r'\[.*?\]', '', cell_value)
-    cell_value = re.sub(r'\(.*?\)', '', cell_value)
-    cell_value = cell_value.replace('/', ' ').strip()
-    return cell_value
-
-# Filter and blank out timetable cells based on selected subjects
-def filter_and_blank_timetable_by_subjects(timetable, selected_subjects):
-    for index, row in timetable.iterrows():
-        for col in timetable.columns[1:]:
-            cell_value = str(row[col]).strip()
-            cleaned_value = clean_cell_value(cell_value)
-            cell_subjects = cleaned_value.split()
-            if not any(sub in cell_subjects for sub in selected_subjects):
-                timetable.at[index, col] = ""
-    return timetable
-
-# Create a personal timetable based on user input
-def create_personal_timetable(timetable_sheet, section, selected_subjects):
-    section_timetable = get_section_timetable(timetable_sheet, section)
-    if section_timetable is not None:
-        personal_timetable = filter_and_blank_timetable_by_subjects(section_timetable, selected_subjects)
-        return personal_timetable
+# Function to display a profile
+def display_profile(enrollment_no):
+    profile = profiles.get(enrollment_no)
+    if profile:
+        st.write(f"**Name:** {profile['name']}")
+        st.write(f"**Section:** {profile['section']}")
+        st.write("**Subjects:**")
+        for subject in profile['subjects']:
+            st.write(f"- {subject}")
     else:
-        return None
+        st.error("Profile not found.")
 
-# Streamlit app
-st.title("Personal Timetable Generator")
+# UI for the app
+st.title("Student Profile Management")
 
-# Upload the general timetable Excel file
-uploaded_file = st.file_uploader("Upload your timetable Excel file", type=["xlsx"])
+# Menu for actions
+menu = st.sidebar.selectbox("Select Action", ["Create/Update Profile", "Delete Profile", "View Profile"])
 
-if uploaded_file:
-    sheets = load_excel(uploaded_file)
-    timetable_sheet = sheets.get("MBA 2023-25_3RD SEMESTER")
+if menu == "Create/Update Profile":
+    st.header("Create or Update Profile")
+    name = st.text_input("Enter your name")
+    enrollment_no = st.text_input("Enter your enrollment number")
+    section = st.selectbox("Select your section", ["A", "B", "C"])
+    
+    st.subheader("Select Subjects")
+    
+    compulsory_subjects = ["Innovation, Entrepreneurship and Start-ups (IES)", "Know yourself (KY)", "Professional Ethics (PE)"]
+    general_elective_1 = st.selectbox("General Electives 1 (Choose one)", ["Bibliophiles (Bibl)", "Psychology in Business (PB-A)"])
+    general_elective_2 = st.selectbox("General Electives 2 (Choose one)", ["International Business (IB)", "Project Management (PM)", "E-Business (E.Bus)"])
+    
+    major_sector = st.selectbox("Choose your Major Sector", [
+        "Sales and Marketing",
+        "Finance",
+        "Business Analytics and Operations",
+        "Media",
+        "HR",
+        "Logistics & Supply Chain"
+    ])
+    
+    sector_subjects = {
+        "Sales and Marketing": ["Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)"],
+        "Finance": ["Financial Statement Analysis (FSA)", "Business Valuation (BussV)", "Security and Portfolio Management (SPM)"],
+        "Business Analytics and Operations": ["Programing for Analytics (PA)", "Data Mining and Visualization (DMV)", "AI and Machine Learning (AIML)"],
+        "Media": ["Digital Media (DM)", "Media Production and Consumption (MPC)", "Media Research Tools and Analytics (MRTA)"],
+        "HR": ["Performance Management System (PMS)", "Talent Acquisition (TA)", "Learnings & Development (L&D)"],
+        "Logistics & Supply Chain": ["Purchasing & Inventory Management (P&IM)", "Supply Chain Management (SCM)", "Transportation & Distribution Management (TDM)"]
+    }
+    
+    chosen_sector_subjects = sector_subjects[major_sector]
+    selected_subjects = st.multiselect("Major Sector Subjects (Choose all)", chosen_sector_subjects, chosen_sector_subjects)
+    
+    additional_subject = st.selectbox("Choose any one additional subject", [
+        "Consumer Behaviour (CB)", "Integrated Marketing Communication (IMC)", "Sales & Distribution Management (S&DM)",
+        "Marketing Analytics (Man)", "Strategic Brand Management (SBM)", "Financial Statement Analysis (FSA)",
+        "Business Valuation (BussV)", "Security and Portfolio Management (SPM)", "International Finance (IF)",
+        "Management of Banks (MoB)", "Programing for Analytics (PA)", "Text Mining and Sentiment Analytics (TM&SA)",
+        "Data Mining and Visualization (DMV)", "Analytics for Service Operations (ASO)", "AI and Machine Learning (AIML)",
+        "Digital Media (DM)", "Media Production and Consumption (MPC)", "Media and Sports Industry (MSI)",
+        "Media Research Tools and Analytics (MRTA)", "Media Cost Management & Control (MCMC)",
+        "Performance Management System (PMS)", "Talent Acquisition (TA)", "Learnings & Development (L&D)",
+        "Compensation & Reward Management (C&RM)", "Purchasing & Inventory Management (P&IM)",
+        "Supply Chain Management (SCM)", "Transportation & Distribution Management (TDM)",
+        "Warehousing & Distribution Facilities Management (W&DFM)"
+    ])
+    
+    # Combine all selected subjects
+    subjects = compulsory_subjects + [general_elective_1, general_elective_2] + selected_subjects + [additional_subject]
+    
+    if st.button("Save Profile"):
+        create_or_update_profile(name, enrollment_no, section, subjects)
 
-    if timetable_sheet is not None:
-        # Get the user's section and selected subjects
-        section = st.selectbox("Select your Section", ["A", "B", "C"])
-        selected_subjects = st.multiselect("Select your subjects", [
-            "Innovation, Entrepreneurship and Start-ups (IES)",
-            "Know yourself (KY)",
-            "Professional Ethics (PE)",
-            # Add more subjects here
-        ])
+elif menu == "Delete Profile":
+    st.header("Delete Profile")
+    enrollment_no = st.text_input("Enter the enrollment number of the profile to delete")
+    if st.button("Delete Profile"):
+        delete_profile(enrollment_no)
 
-        # Create the personal timetable
-        personal_timetable = create_personal_timetable(timetable_sheet, section, selected_subjects)
-
-        if personal_timetable is not None:
-            st.subheader("Your Personal Timetable")
-            st.dataframe(personal_timetable)
-        else:
-            st.error(f"Timetable for Section {section} not found.")
-    else:
-        st.error("The required timetable sheet is not found in the uploaded file.")
+elif menu == "View Profile":
+    st.header("View Profile")
+    enrollment_no = st.text_input("Enter the enrollment number to view")
+    if st.button("View Profile"):
+        display_profile(enrollment_no)
