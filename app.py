@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import re
 
 def load_excel(file):
     # Load the entire Excel file
@@ -22,18 +23,22 @@ def get_section_timetable(timetable_sheet, section):
     else:
         return None
 
+def clean_subject_abbreviation(subject):
+    # Remove content within brackets and strip leading/trailing spaces
+    subject = re.sub(r'\(.*?\)', '', subject).strip()
+    # Split by '/' and return a list of cleaned subject abbreviations
+    return [sub.strip() for sub in subject.split('/')]
+
 def filter_and_blank_timetable_by_subjects(timetable, selected_subjects):
     for index, row in timetable.iterrows():
         for col in timetable.columns[1:]:  # Skip the first column (time slot)
             cell_value = str(row[col]).strip()
-            
-            # Split cell content by common delimiters like space, comma, or hyphen
-            cell_components = [comp.strip() for comp in re.split('[,;/ -]', cell_value)]
-            
-            # Check if any of the components match the selected subjects
-            if not any(comp in selected_subjects for comp in cell_components):
+            cell_subjects = clean_subject_abbreviation(cell_value)
+
+            # If none of the cleaned subjects in the cell match the selected subjects, blank it out
+            if not any(sub in selected_subjects for sub in cell_subjects):
                 timetable.at[index, col] = ""
-    
+
     return timetable
 
 def main():
@@ -54,6 +59,7 @@ def main():
                 st.subheader("Select Your Subjects")
                 # Combine course title and abbreviation for selection
                 subjects = subjects_sheet[['Cours Code', 'Course Title', 'Abbreviation']].drop_duplicates()
+                subjects['Abbreviation'] = subjects['Abbreviation'].replace({'PB': 'PB-A', 'MAn': 'Man'})
                 subjects['Display'] = subjects['Course Title'] + " (" + subjects['Abbreviation'] + ")"
                 subject_options = subjects['Display'].tolist()
 
@@ -62,6 +68,9 @@ def main():
                 if selected_subjects:
                     # Extract just the abbreviations to filter the timetable
                     selected_abbreviations = [sub.split('(')[-1].replace(')', '').strip() for sub in selected_subjects]
+
+                    # Clean the selected abbreviations
+                    selected_abbreviations = [abbr for sub in selected_abbreviations for abbr in clean_subject_abbreviation(sub)]
 
                     # Get the timetable for the selected section
                     section_timetable = get_section_timetable(timetable_sheet, selected_section)
